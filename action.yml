@@ -1,0 +1,45 @@
+name: 'Archiving Report'
+description: 'Finds and uploads test reports to Practitest'
+inputs:
+  lookup-folder:
+    description: 'Base folder to archive'
+    required: true
+  build-title:
+    description: 'Title to appear in the Test set runs'
+    required: true
+  project-id:
+    description: 'Project ID'
+    required: true
+  instance-id:
+    description: 'ID for the test instance to be associated with this run'
+    required: true
+  status:
+    description: 'Set the status of the build'
+    required: false
+    default: 0
+  practitest-host:
+    description: 'URL for Practitest'
+    required: true
+  practitest-api-host:
+    description: 'URL for the Practitest API'
+    required: true
+  practitest-token:
+    description: 'Token to access Practitest'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Archive Report
+      shell: bash
+      run: |
+        curl -H "Content-Type:application/json" \
+          -u empty:${{ inputs.practitest-token }} \
+          -X POST ${{ inputs.practitest-api-host }}/api/v2/projects/${{ inputs.project-id }}/runs.json \
+          -d '{"data": { "type": "instances", "attributes": {"instance-id": ${{ inputs.instance-id }}, "exit-code": ${{ inputs.status }} }, "files": {"data": [{"filename": "${{ inputs.build-title }}", "content_encoded": "$( base64 ${{ inputs.lookup-folder }} )" }]} }  }'
+
+    - name: Adding link on job summary
+      shell: bash
+      run: |
+        LINK_TEXT="### [${{ inputs.build-title }}](${{ inputs.practitest-host }}/p/${{ inputs.project-id }}/instances/${{ inputs.instance-id }}/edit) :rocket:"
+        echo $LINK_TEXT >> $GITHUB_STEP_SUMMARY
