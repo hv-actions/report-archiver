@@ -1,0 +1,60 @@
+name: 'Archiving Report'
+description: 'Finds and uploads test reports to Practitest'
+inputs:
+  lookup-folder:
+    description: 'Base folder to archive'
+    required: true
+  build-title:
+    description: 'Title to appear in the Test set runs'
+    required: true
+  project-id:
+    description: 'Project ID'
+    required: true
+  status:
+    description: 'Set the status of the build'
+    required: false
+    default: 0
+  practitest-host:
+    description: 'URL for Practitest'
+    required: true
+  practitest-api-host:
+    description: 'URL for the Practitest API'
+    required: true
+  practitest-token:
+    description: 'Token to access Practitest'
+    required: true
+  display-action-logs:
+    description: 'More verbose if true'
+    required: false
+    default: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Upload Report
+      uses: "docker://docker.repo.orl.eng.hitachivantara.com/shmuel777/firecracker-container"
+      with:
+        args: >
+          java -jar /app/practitest-firecracker-standalone.jar 
+          --api-token=${{ inputs.practitest-token }} 
+          --email=automation@hitachivantara.com 
+          --testset-name="${{ inputs.build-title }}" 
+          --reports-path=${{ inputs.lookup-folder }} 
+          --project-id=${{ inputs.project-id }} 
+          --author-id=automation 
+          --api-uri=${{ inputs.practitest-api-host }} 
+          --display-action-logs=${{ inputs.display-action-logs }} 
+          create-and-populate-testset
+
+    - name: Adding link on job summary
+      if: always()
+      shell: bash
+      run: |
+        LINK_TEXT="### [${{ inputs.build-title }}](${{ inputs.practitest-host }}/p/${{ inputs.project-id }}/sets) :rocket:"
+        echo $LINK_TEXT\ >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f ${{ inputs.lookup-folder }}/summary.txt ]; then
+          echo "<pre>" >> $GITHUB_STEP_SUMMARY
+          cat ${{ inputs.lookup-folder }}/summary.txt >> $GITHUB_STEP_SUMMARY
+          echo "</pre>" >> $GITHUB_STEP_SUMMARY
+        fi
