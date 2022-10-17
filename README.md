@@ -1,4 +1,4 @@
-# Github action to archive a path into GH Pages
+# Github action to archive a path into Practitest
 
 ## Using firecracker CLI
 
