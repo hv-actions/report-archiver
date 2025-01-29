@@ -27,24 +27,69 @@ inputs:
     description: 'More verbose if true'
     required: false
     default: true
+  product-name:
+    description: "One of the product names from Practitest, e.g. Analyzer or DataIntegration"
+    required: true
+  product-version:
+    description: 'Release version, e.g. 10.2 or 10.2.0.2'
+    required: true
+  test-type:
+    description: "One of the test case type options from Practitest, e.g. UI or Functional"
+    required: true
+
 
 runs:
   using: "composite"
   steps:
-    - name: Upload Report
-      uses: "docker://docker.repo.orl.eng.hitachivantara.com/shmuel777/firecracker-container"
+    - name: Get pracitest jar
+      id: get-practitest-jar
+      uses: robinraju/release-downloader@v1
       with:
-        args: >
-          java -jar /app/practitest-firecracker-standalone.jar 
-          --api-token=${{ inputs.practitest-token }} 
-          --email=automation@hitachivantara.com 
-          --testset-name="${{ inputs.build-title }}" 
-          --reports-path=${{ inputs.lookup-folder }} 
-          --project-id=${{ inputs.project-id }} 
-          --author-id=automation 
-          --api-uri=${{ inputs.practitest-api-host }} 
-          --display-action-logs=${{ inputs.display-action-logs }} 
-          create-and-populate-testset
+        repository: 'PractiTest/practitest-firecracker'
+        latest: true
+        fileName: 'practitest-firecracker-*-standalone.jar'
+        out-file-path: 'firecracker/practitest-firecracker-standalone.jar'
+
+    - name: Upload Report
+      shell: bash
+      run: |
+        echo '{
+          "additional-test-fields": {
+            "custom-fields": {
+              "---f-54268": "${{ inputs.test-type }}",
+              "---f-54359": "Regression"
+            },
+            "system-fields": {
+              "status": "Ready"
+            }
+          },
+          "additional-testset-fields": {
+            "custom-fields": {
+              "---f-55126": "QAT",
+              "---f-54268": "${{ inputs.test-type }}",
+              "---f-54254": "${{ inputs.product-name }}"
+            },
+            "system-fields": {
+              "version": "${{ inputs.product-version }}"
+            }
+          },
+          "email": "practitest.admin@hitachivantara.com",
+          "test-case-as-pt-test-step": false,
+          "multitestset": false,
+          "pt-test-name": "?pt-name-combine",
+          "pt-test-step-name": "?test-case-name"
+        }' > config.json
+        cat ./config.json
+        java -jar ${{ fromJson(steps.get-practitest-jar.outputs.downloaded_files)[0] }} \
+        --reports-path="${{ inputs.lookup-folder }}" \
+        --author-id=28862 \
+        --api-uri="${{ inputs.practitest-api-host }}" \
+        --display-action-logs="${{ inputs.display-action-logs }}" \
+        --config-path=./config.json \
+        --project-id="${{ inputs.project-id }}" \
+        --testset-name="${{ inputs.build-title }}" \
+        --api-token="${{ inputs.practitest-token }}" \
+        create-and-populate-testset
 
     - name: Adding link on job summary
       if: always()
