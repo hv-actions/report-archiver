@@ -92,7 +92,7 @@ runs:
         cat ./config.json
         java -jar ${{ fromJson(steps.get-practitest-jar.outputs.downloaded_files)[0] }} \
         --reports-path="${{ inputs.lookup-folder }}" \
-        --author-id=28862 \
+        --author-id=43327 \
         --api-uri="${{ inputs.practitest-api-host }}" \
         --display-action-logs="${{ inputs.display-action-logs }}" \
         --config-path=./config.json \
