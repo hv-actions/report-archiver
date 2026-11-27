@@ -83,7 +83,7 @@ runs:
             "system-fields": {
             }
           },
-          "email": "practitest.admin@hitachivantara.com",
+          "email": "practitest.admin@pentaho.com",
           "test-case-as-pt-test-step": false,
           "multitestset": false,
           "pt-test-name": "?pt-name-combine",
